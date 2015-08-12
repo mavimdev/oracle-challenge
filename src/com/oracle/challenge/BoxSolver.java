@@ -17,24 +17,29 @@ public class BoxSolver {
     static String bestPath;
 
 
-    public static String solve(String problem) {
-        map = problem;
+    public static String solve(String mapString) {
+        map = mapString;
         fillMatrix();
-        findSolution("u", initialX, initialY-1, 1, 0, NO_BOX);
-        findSolution("d", initialX, initialY+1, 1, 0, NO_BOX);
-        findSolution("l", initialX-1, initialY, 1, 0, NO_BOX);
-        findSolution("r", initialX+1, initialY, 1, 0, NO_BOX);
+        findSolution("u", initialX-1, initialY, 1, 0, NO_BOX);
+        findSolution("d", initialX+1, initialY, 1, 0, NO_BOX);
+        findSolution("l", initialX, initialY-1, 1, 0, NO_BOX);
+        findSolution("r", initialX, initialY+1, 1, 0, NO_BOX);
         return bestPath;
     }
 
     public static void findSolution(String path, int x, int y, int moves, int boxesDone, char pushingBox) {
         boolean stopForward = false;
-        int forwardX = x;
-        int forwardY = y;
+        // to control where is the box
+        int xBox = x;
+        int yBox = y;
         char walkedDir;
         // if is in the wall, is a invalid move
         System.out.println(x + "," + y);
         if (pushingBox == NO_BOX && mapMatrix[x][y].content == '#') {
+            return;
+        }
+        // if has more moves than the minimum for this place and for the boxes already accomplished, give up
+        if (mapMatrix[x][y].boxesDone >= boxesDone && mapMatrix[x][y].moves <= moves) {
             return;
         }
         // getting the last path character - last move done
@@ -42,27 +47,27 @@ public class BoxSolver {
         walkedDir = path.charAt(path.length() - 1);
         switch (walkedDir) {
             case 'u':
-                forwardY--;
+                xBox--;
                 break;
             case 'd':
-                forwardY++;
+                xBox++;
                 break;
             case 'l':
-                forwardX--;
+                yBox--;
                 break;
             case 'r':
-                forwardX++;
+                yBox++;
                 break;
         }
 
         // if is pushing a box and the box is in the wall, is a invalid move
         if (pushingBox != NO_BOX) {
-            if (mapMatrix[forwardX][forwardY].content == '#') {
+            if (mapMatrix[xBox][yBox].content == '#') {
                 return;
             }
         }
-
-        if (mapMatrix[forwardX][forwardY].content == pushingBox + TO_LOWERCASE) {
+        // if the new place of the box is the target
+        if (mapMatrix[xBox][yBox].content == pushingBox + TO_LOWERCASE) {
             boxesDone++;
             pushingBox = NO_BOX;
             stopForward = true;
@@ -74,20 +79,16 @@ public class BoxSolver {
                 return;
             }
         }
-
-        // if has more moves than the minimum for this place and for the boxes already accomplished, give up
-        if (mapMatrix[x][y].boxesDone >= boxesDone && mapMatrix[x][y].moves <= moves) {
-            return;
-        }
+        // if we have a best result
         if (boxesDone >= mapMatrix[x][y].boxesDone && moves < mapMatrix[x][y].moves) {
             mapMatrix[x][y].boxesDone = boxesDone;
             mapMatrix[x][y].moves = moves;
         }
-
-        if (mapMatrix[forwardX][forwardY].content >= 'A'
-                && mapMatrix[forwardX][forwardY].content <= 'Z'
-                && mapMatrix[forwardX][forwardY].content != pushingBox + TO_LOWERCASE) {
-            pushingBox = mapMatrix[forwardX][forwardY].content;
+        // if there is a box on this cell and is not on target, get this box
+        if (mapMatrix[xBox][yBox].content >= 'A'
+                && mapMatrix[xBox][yBox].content <= 'Z'
+                && mapMatrix[xBox][yBox].content != pushingBox + TO_LOWERCASE) {
+            pushingBox = mapMatrix[xBox][yBox].content;
         }
 
         // increments the number of moves for the next step
@@ -95,16 +96,16 @@ public class BoxSolver {
 
         // call the recursive function to continuing the search for the best solution
         if(!stopForward || walkedDir != 'u') {
-            findSolution(path + "u", x, y-1, moves, boxesDone, pushingBox);
+            findSolution(path + "u", x-1, y, moves, boxesDone, pushingBox);
         }
         if(!stopForward || walkedDir != 'd') {
-            findSolution(path + "d", x, y+1, moves, boxesDone, pushingBox);
+            findSolution(path + "d", x+1, y, moves, boxesDone, pushingBox);
         }
         if(!stopForward || walkedDir != 'l') {
-            findSolution(path + "l", x-1, y, moves, boxesDone, pushingBox);
+            findSolution(path + "l", x, y-1, moves, boxesDone, pushingBox);
         }
         if(!stopForward || walkedDir != 'r') {
-            findSolution(path + "r", x+1, y, moves, boxesDone, pushingBox);
+            findSolution(path + "r", x, y+1, moves, boxesDone, pushingBox);
         }
     }
 
@@ -128,6 +129,8 @@ public class BoxSolver {
                 if (charAux == '@') {
                     initialX = i;
                     initialY = j;
+                    mapMatrix[i][j].moves = 0;
+                    mapMatrix[i][j].boxesDone = 0;
                 }
                 // if is a box:
                 if (charAux >= 'A' && charAux <= 'Z') {
@@ -137,18 +140,18 @@ public class BoxSolver {
             }
             count++;
         }
-        //freeing some memory
+        //setting free some memory
         map = null;
-    }
-
-    public static void main(String[] args) {
-        String bestPath;
-        bestPath = solve("##########\n# b    B #\n#   @    #\n# A    a #\n#        #\n##########");
-        System.out.println(bestPath);
-
         if (DEBUG) {
             printMap();
         }
+    }
+
+    public static void main(String[] args) {
+        String bestPath = null;
+//        bestPath = solve("##########\n# b    B #\n#   @    #\n# A    a #\n#        #\n##########");
+        bestPath = solve("######\n#@A a#\n#    #\n######");
+        System.out.println(bestPath);
     }
 
     public static void printMap() {
@@ -170,7 +173,11 @@ public class BoxSolver {
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 if (mapMatrix[i][j].content != '#' && mapMatrix[i][j].content < 64) {
-                    System.out.print(mapMatrix[i][j].moves);
+                    if(mapMatrix[i][j].moves == Integer.MAX_VALUE) {
+                        System.out.print("!");
+                    } else {
+                        System.out.print(mapMatrix[i][j].moves);
+                    }
                 } else {
                     System.out.print(mapMatrix[i][j].content);
                 }
