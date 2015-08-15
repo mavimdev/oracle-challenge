@@ -9,7 +9,8 @@ public class BoxSolver {
     static final char NO_BOX = '_';
     static String map;
     static int width, height;
-    static Cell[][] mapMatrix;      // to hold the content of the cell and  related info (content, moves, boxes_done)
+    static Cell[][] mapControl;      // to hold the cell info (moves, boxes_done)
+    static char[][] mapContent;
     static int initialX; // x coord where the player are at beginning
     static int initialY; // y coord where the player are at beginning
     static int numberBoxes;
@@ -35,11 +36,11 @@ public class BoxSolver {
         char walkedDir;
         // if is in the wall, is a invalid move
         System.out.println(x + "," + y);
-        if (pushingBox == NO_BOX && mapMatrix[x][y].content == '#') {
+        if (pushingBox == NO_BOX && mapContent[x][y] == '#') {
             return;
         }
         // if has more moves than the minimum for this place and for the boxes already accomplished, give up
-        if (mapMatrix[x][y].boxesDone >= boxesDone && mapMatrix[x][y].moves <= moves) {
+        if (mapControl[x][y].boxesDone >= boxesDone && mapControl[x][y].moves <= moves) {
             return;
         }
         // getting the last path character - last move done
@@ -62,12 +63,12 @@ public class BoxSolver {
 
         // if is pushing a box and the box is in the wall, is a invalid move
         if (pushingBox != NO_BOX) {
-            if (mapMatrix[xBox][yBox].content == '#') {
+            if (mapContent[xBox][yBox] == '#') {
                 return;
             }
         }
         // if the new place of the box is the target
-        if (mapMatrix[xBox][yBox].content == pushingBox + TO_LOWERCASE) {
+        if (mapContent[xBox][yBox] == pushingBox + TO_LOWERCASE) {
             boxesDone++;
             pushingBox = NO_BOX;
             stopForward = true;
@@ -80,15 +81,15 @@ public class BoxSolver {
             }
         }
         // if we have a best result
-        if (boxesDone >= mapMatrix[x][y].boxesDone && moves < mapMatrix[x][y].moves) {
-            mapMatrix[x][y].boxesDone = boxesDone;
-            mapMatrix[x][y].moves = moves;
+        if (boxesDone >= mapControl[x][y].boxesDone && moves < mapControl[x][y].moves) {
+            mapControl[x][y].boxesDone = boxesDone;
+            mapControl[x][y].moves = moves;
         }
         // if there is a box on this cell and is not on target, get this box
-        if (mapMatrix[xBox][yBox].content >= 'A'
-                && mapMatrix[xBox][yBox].content <= 'Z'
-                && mapMatrix[xBox][yBox].content != pushingBox + TO_LOWERCASE) {
-            pushingBox = mapMatrix[xBox][yBox].content;
+        if (mapContent[xBox][yBox] >= 'A'
+                && mapContent[xBox][yBox] <= 'Z'
+                && mapContent[xBox][yBox] != pushingBox + TO_LOWERCASE) {
+            pushingBox = mapContent[xBox][yBox];
         }
 
         // increments the number of moves for the next step
@@ -118,19 +119,21 @@ public class BoxSolver {
         }
         width = map.indexOf('\n');
         height = ++count;
-        mapMatrix = new Cell[height][width];
+        mapControl = new Cell[height][width];
+        mapContent = new char[height][width];
 
         count = 0;
         char charAux;
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 charAux = map.charAt(count);
-                mapMatrix[i][j] = new Cell(charAux, Integer.MAX_VALUE, 0);
+                mapControl[i][j] = new Cell(Integer.MAX_VALUE, 0);
+                mapContent[i][j] = charAux;
                 if (charAux == '@') {
                     initialX = i;
                     initialY = j;
-                    mapMatrix[i][j].moves = 0;
-                    mapMatrix[i][j].boxesDone = 0;
+                    mapControl[i][j].moves = 0;
+                    mapControl[i][j].boxesDone = 0;
                 }
                 // if is a box:
                 if (charAux >= 'A' && charAux <= 'Z') {
@@ -148,7 +151,7 @@ public class BoxSolver {
     }
 
     public static void main(String[] args) {
-        String bestPath = null;
+        String bestPath;
 //        bestPath = solve("##########\n# b    B #\n#   @    #\n# A    a #\n#        #\n##########");
         bestPath = solve("######\n#@A a#\n#    #\n######");
         System.out.println(bestPath);
@@ -160,7 +163,7 @@ public class BoxSolver {
         System.out.println("Player initial coords: (" + initialX + "," + initialY + ")");
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                System.out.print(mapMatrix[i][j].content);
+                System.out.print(mapContent[i][j]);
             }
             System.out.println();
         }
@@ -172,14 +175,14 @@ public class BoxSolver {
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                if (mapMatrix[i][j].content != '#' && mapMatrix[i][j].content < 64) {
-                    if(mapMatrix[i][j].moves == Integer.MAX_VALUE) {
+                if (mapContent[i][j] == 0) {
+                    if(mapControl[i][j].moves == Integer.MAX_VALUE) {
                         System.out.print("!");
                     } else {
-                        System.out.print(mapMatrix[i][j].moves);
+                        System.out.print(mapControl[i][j].moves);
                     }
                 } else {
-                    System.out.print(mapMatrix[i][j].content);
+                    System.out.print(mapContent[i][j]);
                 }
             }
             System.out.println();
@@ -188,12 +191,10 @@ public class BoxSolver {
 }
 
 class Cell {
-    public char content;    // to hold the content of the cell
     public int moves;       // to hold the minimum number of moves to that cell
     public int boxesDone; // to hold how many boxes were done with that number of moves
 
-    public Cell(char content, int moves, int boxesDone) {
-        this.content = content;
+    public Cell(int moves, int boxesDone) {
         this.moves = moves;
         this.boxesDone = boxesDone;
     }
